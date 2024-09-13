@@ -34,8 +34,6 @@
 
     // SET A COLOR FOR THIS FRAGMENT.
  
-       // MIX (A,B,float)
- 
        float x = 2. * vPos.x;
        float y = 2. * vPos.y;
  
@@ -47,7 +45,7 @@
       rgb = mix(rgb, vec3(0.1, 0.4,0.9), grain);
  
        float colorWater = 10.;
-      float OilPastel = 60.;
+       float OilPastel = 60.;
        x += noise(7. * vPos + 200.);
        y += noise(OilPastel * vPos +100.);
  
