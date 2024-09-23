@@ -1,0 +1,223 @@
+<body bgcolor=black>
+<center>
+<canvas id='canvas1' width=800 height=800></canvas>
+
+<script>
+
+// INITIALIZE GPU PROGRAM
+
+let fragmentShaderHeader = [''                      // WHATEVER CODE WE WANT TO PREDEFINE FOR FRAGMENT SHADERS
+,'precision highp float;'
+,'float noise(vec3 point) { float r = 0.; for (int i=0;i<16;i++) {'
+,'  vec3 D, p = point + mod(vec3(i,i/4,i/8) , vec3(4.0,2.0,2.0)) +'
+,'       1.7*sin(vec3(i,5*i,8*i)), C=floor(p), P=p-C-.5, A=abs(P);'
+,'  C += mod(C.x+C.y+C.z,2.) * step(max(A.yzx,A.zxy),A) * sign(P);'
+,'  D=34.*sin(987.*float(i)+876.*C+76.*C.yzx+765.*C.zxy);P=p-C-.5;'
+,'  r+=sin(6.3*dot(P,fract(D)-.5))*pow(max(0.,1.-2.*dot(P,P)),4.);'
+,'} return .5 * sin(r); }'
+].join('\n');
+
+let nfsh = fragmentShaderHeader.split('\n').length; // NUMBER OF LINES OF CODE IN fragmentShaderHeader
+
+
+let start_gl = (canvas, meshData, vertexSize, vertexShader, fragmentShader) => {
+   let gl = canvas.getContext("webgl");
+   let program = gl.createProgram();
+   gl.program = program;
+   let addshader = (type, src) => {
+      let shader = gl.createShader(type);
+      gl.shaderSource(shader, src);
+      gl.compileShader(shader);
+      if (! gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+         throw "Cannot compile shader:\n\n" + gl.getShaderInfoLog(shader);
+      gl.attachShader(program, shader);
+   };
+   addshader(gl.VERTEX_SHADER  , vertexShader  );
+   // addshader(gl.FRAGMENT_SHADER, fragmentShader);
+   addshader(gl.FRAGMENT_SHADER, fragmentShaderHeader + fragmentShader);
+
+   gl.linkProgram(program);
+   if (! gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw "Could not link the shader program!";
+   gl.useProgram(program);
+   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+   gl.enable(gl.DEPTH_TEST);
+   gl.depthFunc(gl.LEQUAL);
+   let vertexAttribute = (name, size, position) => {
+      let attr = gl.getAttribLocation(program, name);
+      gl.enableVertexAttribArray(attr);
+      gl.vertexAttribPointer(attr, size, gl.FLOAT, false, vertexSize * 4, position * 4);
+   }
+   vertexAttribute('aPos', 3, 0);
+   return gl;
+}
+
+// LOGIC TO TRACK THE CURSOR
+
+let r = canvas1.getBoundingClientRect(), cursor = [0,0,0];
+let setCursor = (e, z) => cursor = [ (e.clientX - r.left) / canvas1.width * 2 - 1,
+                                     1 - (e.clientY - r.top) / canvas1.height * 2,
+                                     z !== undefined ? z : cursor[2] ];
+canvas1.onmousedown = e => setCursor(e, 1);
+canvas1.onmousemove = e => setCursor(e,  );
+canvas1.onmouseup   = e => setCursor(e, 0);
+
+// TRIANGLE DATA (IN THIS CASE, ONE SQUARE)
+
+let meshData = [
+   { type: 1, mesh: new Float32Array([ -1,1,0, 1,1,0, -1,-1,0, 1,-1,0 ]) },
+ 
+];
+
+const NSPHERES = 5;
+
+// VERTEX AND FRAGMENT SHADERS
+
+let vertexSize = 3;
+let vertexShader = `
+   attribute vec3 aPos;
+   varying   vec3 vPos;
+   void main() {
+      gl_Position = vec4(aPos, 1.0);
+      vPos = aPos;
+   }
+`;
+let fragmentShader = `
+   precision mediump float;
+   uniform float uTime, uFL;
+   uniform vec3  uCursor;
+   uniform vec4  uSpheres[ ` + NSPHERES + `];     
+   varying vec3  vPos;
+
+   vec3 bgColor = vec3(0.,0.,.0);
+   
+   float raySphere(vec3 V, vec3 W, vec4 S) {
+      V -= S.xyz;
+     float r = S.w;
+      float VV = dot(V,V);
+      float VW = dot(V,W);
+      float d = VW * VW - (VV - r*r);
+      if (d > 0.)
+         return -VW - sqrt(d);
+      return -1.;
+   }
+
+   float rayPlane(vec3 V, vec3 W, vec3 Pn, vec3 pointOnPlane) {
+      float d = dot(Pn, W);
+      if(abs(d) < 0.0001) return -1.;
+      return dot(Pn, pointOnPlane - V) / d;
+   }
+
+   void main(void) {
+
+      // SET BACKGROUND COLOR
+
+      vec3 color = bgColor;
+      float n = noise(vPos * 200.0);
+      
+
+      // FORM THE RAY FOR THIS PIXEL
+
+      vec3 V = vec3(0.);
+      vec3 W = normalize(vec3(vPos.xy,-uFL));
+
+      vec3 planeNormal = vec3(0.0, 1.0, 0.0); 
+      vec3 pointOnPlane = vec3(0.0, -1., -3.0); 
+      float tPlane = rayPlane(V, W, planeNormal, pointOnPlane);
+      
+      
+      vec3 L = normalize(vec3 (cos(uTime),2.,2. * sin(uTime)));
+
+   
+      float tMin = 1000.;
+
+      if (tPlane > 0.0) {
+       vec3 P = V + tPlane * W; 
+       color = vec3(0.0, 0.0, 0.0); 
+       
+        // Check for shadows on the plane
+        bool isInShadow = false;
+        for (int j = 0; j < ` + NSPHERES + `; j++) {
+            vec3 C = uSpheres[j].xyz;
+            float r = uSpheres[j].w;
+            P += noise(3. * vPos);
+            float tSphere = raySphere(P, L, uSpheres[j]); 
+            if (tSphere > 0.0) {
+                isInShadow = true; 
+                break;
+            }
+        }
+        if (!isInShadow) {
+          color += vec3(4.55) * vec3(0.20) * vec3(0.9 * max(0., dot(planeNormal, L)));
+        }
+      }
+
+      for (int i = 0; i <` + NSPHERES + `; i++ ){
+          vec3 C = uSpheres[i].xyz;
+          float r = uSpheres[i].w;
+          L += vec3(n);
+          float t = raySphere(V, W, uSpheres[i]);
+           if(t > 0. && t < tMin){
+           tMin = t;
+           vec3 P = V + t * W;
+           vec3 N = normalize(P-C);
+           color = vec3 (.0);
+           N += vec3(n);
+           bool isInshadow = false;
+             for (int j = 0; j <` + NSPHERES + `; j++ ){
+                if ( j != i){
+                  if (raySphere (P, L ,uSpheres[j] ) > 0.){
+                  isInshadow = true;
+                  break; 
+                  }
+                
+               }
+             } 
+                 if (! isInshadow){
+                  color += vec3 (4.55) *vec3 (.20 ) * vec3( .9 * max(0., dot(N,L)));
+                  }
+           }
+      }
+      
+
+      gl_FragColor = vec4(sqrt(color), 1.);
+   }
+`;
+
+// WAIT 100 MSECS BEFORE STARTING UP
+
+setTimeout(() => {
+   let gl = start_gl(canvas1, meshData, vertexSize, vertexShader, fragmentShader);
+
+   // FIND LOCATIONS IN GPU PROGRAM OF UNIFORM VARIABLES
+
+   let uFL       = gl.getUniformLocation(gl.program, "uFL"      );
+   let uTime     = gl.getUniformLocation(gl.program, "uTime"    );
+   let uCursor   = gl.getUniformLocation(gl.program, "uCursor"  ); 
+   let uSpheres  = gl.getUniformLocation(gl.program, "uSpheres" ); 
+
+
+   // ANIMATE AND RENDER EACH ANIMATION FRAME
+
+   let startTime = Date.now() / 1000;
+   setInterval(() => {
+      
+      // SET ALL UNIFORM VARIABLES
+
+      let time = Date.now() / 1000 - startTime;
+      gl.uniform1f(uTime, time);
+      gl.uniform3fv(uCursor, cursor);
+      gl.uniform1f(uFL, 3);
+      gl.uniform4fv(uSpheres, [-0.5,1.,-6.,0.3, -.3,3.0,-6.,.4 , -.2,3.,-6.,.2]);
+
+      // RENDER THE FRAME
+
+      for (let n = 0 ; n < meshData.length ; n++) {
+         let mesh = meshData[n].mesh;
+         gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
+         gl.drawArrays(meshData[n].type ? gl.TRIANGLE_STRIP : gl.TRIANGLES, 0, mesh.length / vertexSize);
+      }
+   }, 30);
+}, 100);
+</script>
+
