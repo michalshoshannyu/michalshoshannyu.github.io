@@ -54,9 +54,11 @@ function Matrix() {
       let zRotation = [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
       value = multiply(value, zRotation);
     };
+
     this.scale = (x, y, z) => {
       value = multiply(value, [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]);
     };
+    
     this.perspective = (x, y, z) => {
       value = multiply(value, [1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z, 0, 0, 0, 1]);
     };
