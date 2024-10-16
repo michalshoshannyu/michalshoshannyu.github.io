@@ -44,14 +44,14 @@ function Matrix() {
     this.rotateY = (theta) => {
       let c = Math.cos(theta);
       let s = Math.sin(theta);
-      let yRotation = [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1];
+      let yRotation = [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]; 
       value = multiply(value, yRotation);
     };
   
     this.rotateZ = (theta) => {
       let c = Math.cos(theta);
       let s = Math.sin(theta);
-      let zRotation = [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+      let zRotation = [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; 
       value = multiply(value, zRotation);
     };
 
