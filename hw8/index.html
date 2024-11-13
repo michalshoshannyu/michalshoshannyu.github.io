@@ -1,0 +1,446 @@
+<body bgcolor="#ffffff">
+  <canvas
+    id="textureCanvas"
+    width="512"
+    height="512"
+    style="position: absolute; left: -1000"
+  ></canvas>
+  <center>
+    <canvas id="canvas1" width="800" height="800"></canvas>
+    <script src="lib.js"></script>
+    <script>
+      texture(0, "riso-color-tex.jpg"); // RISO COLOR COLORS
+      texture(1, "riso-pink-tex.jpg"); // RISO COLOR PINK
+      texture(7, "riso-wave-lines.jpg"); // RISO WAVE
+      texture(12, "riso-color-tex-wood.jpg"); // WOOD
+      texture(13, "riso-color-tex-wood-bright.jpg"); // WOOD-B
+      texture(14, "riso-color-tex-wood-M.jpg"); // WOOD-B
+
+      texture(3, "bump-map-cube.jpg"); // BUMP MAP CUBE PURE
+      texture(6, "bump-map-cube-lines.jpg"); //BUMP MAP CUBE + LINES
+      texture(8, "bump-map-wave.jpg"); // BUMP MAP WAVE
+      texture(10, "bump-map-rect-cylinder.jpg"); // BUMP MAP RECTS CYLINDER
+      texture(11, "wood.jpg"); // BUMP WOOD
+
+      // NOT IN USE
+      texture(2, textureCanvas); // NOTE: THIS IS AN HTML CANVAS BEING USED AS A TEXTURE SOURCE.
+      texture(4, "check-button.png");
+
+      let toy = (t) => {
+        M.S()
+          .move(0.0, 0.2, 0)
+          .turnY(t / 3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0, 0, -0.3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 7, 8)
+          .R();
+
+        M.S()
+          .move(0.09, -0.2, 0.3)
+          .turnY(Math.PI / 2)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.0)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.3, 0.1, 0.3)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0, -0.4)
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(0.4, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0.0, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0.2, 0.45, -0.2)
+          .scale(0.45, 0.02, 0.25)
+          .draw(Cube(), [1, 1, 1], 1, 1, 3)
+          .R();
+
+        M.S()
+          .move(1, 0.3, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 8)
+          .R();
+        M.S()
+          .move(1.0, 0.4, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(1.0, 0.5, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+      };
+
+      function drawFrame() {
+        requestAnimationFrame(drawFrame);
+        let t = Date.now() / 1000;
+
+        // CHANGE THE CONTENT OF THE 2D CANVAS EVERY ANIMATION FRAME.
+
+        let ctx = textureCanvas.getContext("2d");
+        ctx.fillStyle = "#ffd0d0";
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = "black";
+        ctx.font = "100px Arial";
+        let minutes = ((t / 60) >> 0) % 60,
+          seconds = t % 60 >> 0; // FORMAT TIME TO MINUTES & SECONDS.
+        ctx.fillText(minutes + "m " + seconds + "s", 60, 280);
+        M.S().perspective(5);
+
+        M.S()
+          .move(0.0, 0.3, 0)
+          .turnY(t / 3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, -0.3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(0.09, -0.2, 0.3)
+          .turnY(Math.PI / 2)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.0)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(-0.3, 0.1, 0.3)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0, -0.4)
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+
+        M.S()
+          .move(0.4, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0.0, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0.2, 0.45, -0.2)
+          .scale(0.45, 0.02, 0.25)
+          .draw(Cube(), [1, 1, 1], 1, 12, 3)
+          .R();
+
+        M.S()
+          .move(1, 0.3, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(1.0, 0.4, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(1.0, 0.5, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+
+        M.S()
+          .move(0.0, -0.6, 0.0)
+          .turnY(t / 3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0, 0, -0.3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 7, 8)
+          .R();
+
+        M.S()
+          .move(0.09, -0.2, 0.3)
+          .turnY(Math.PI / 2)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.0)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(-0.3, 0.1, 0.3)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0, -0.4)
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+
+        M.S()
+          .move(0.4, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0.0, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 7, 8)
+          .R();
+        M.S()
+          .move(0.2, 0.45, -0.2)
+          .scale(0.45, 0.02, 0.25)
+          .draw(Cube(), [1, 1, 1], 1, 1, 3)
+          .R();
+
+        M.S()
+          .move(1, 0.3, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(1.0, 0.4, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.S()
+          .move(1.0, 0.5, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 0, 10)
+          .R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+      }
+      requestAnimationFrame(drawFrame);
+    </script>
+  </center>
+</body>
