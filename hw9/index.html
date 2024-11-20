@@ -1,0 +1,365 @@
+<body bgcolor="#ffffff">
+  <center>
+    <canvas id="canvas1" width="900" height="900"></canvas>
+  
+    <script src="lib.js"></script>
+    <script>
+      // TEXTURE DEFINITIONS
+      const loadTextures = () => {
+        texture(0, "riso-color-tex.jpg"); // RISO COLOR COLORS
+        texture(1, "riso-pink-tex.jpg"); // RISO COLOR PINK
+        texture(7, "riso-wave-lines.jpg"); // RISO WAVE
+        texture(12, "riso-color-tex-wood.jpg"); // WOOD
+        texture(13, "riso-color-tex-wood-bright.jpg"); // WOOD-B
+        texture(14, "riso-color-tex-wood-M.jpg"); // WOOD-B
+        texture(3, "bump-map-cube.jpg"); // BUMP MAP CUBE PURE
+        texture(6, "bump-map-cube-lines.jpg"); // BUMP MAP CUBE + LINES
+        texture(8, "bump-map-wave.jpg"); // BUMP MAP WAVE
+        texture(10, "bump-map-rect-cylinder.jpg"); // BUMP MAP RECTS CYLINDER
+        texture(11, "wood.jpg"); // BUMP WOOD
+      };
+      let toy = (t) => {
+        M.S()
+          .move(0.0, 0.2, 0)
+          .turnY(t / 3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, -0.3)
+          .S()
+          .scale(0.15, 0.15, 0.15)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(0.09, -0.2, 0.3)
+          .turnY(Math.PI / 2)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.08, 0.08, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 13, 11)
+          .R();
+
+        M.S()
+          .move(-0.35, -0.0, 0.0)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0.0, 0.2)
+          .turnZ(t)
+          .scale(0.0, 0.0, 0.0)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+
+        M.S()
+          .move(-0.3, 0.1, 0.3)
+          .turnY(Math.PI)
+          .S()
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0, 0, 0)
+          .turnY(Math.PI)
+          .S()
+          .move(0, 0, -0.4)
+          .turnZ(t)
+          .scale(0.2, 0.2, 0.03)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+
+        M.S()
+          .move(0.4, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0.0, 0.21, -0.2)
+          .scale(0.2, 0.25, 0.2)
+          .draw(Cube(), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(0.2, 0.45, -0.2)
+          .scale(0.45, 0.02, 0.25)
+          .draw(Cube(), [1, 1, 1], 1, 12, 3)
+          .R();
+
+        M.S()
+          .move(1, 0.3, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(1.0, 0.4, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.S()
+          .move(1.0, 0.5, -0.2)
+          .turnX(Math.PI / 2)
+          .scale(0.08, 0.08, 0.08)
+          .draw(Cylinder(30), [1, 1, 1], 1, 12, 11)
+          .R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+        M.R();
+      };
+      
+      // STATE MANAGEMENT
+      let state = {
+        points: [
+          { x: 1, y:1.5, z: -3 },
+          { x: 1, y: -0.5, z: -3 },
+          { x: -0.5, y: -0.5, z: -3 },
+          { x:-1, y: -1, z: -3 },
+        ],
+        hitAreaRadius: 0.2,
+        isMouseDown: false,
+        selectedPoint: -1,
+        isDragging: false,
+        mouseX: 0,
+        mouseY: 0,
+      };
+
+      // MOUSE COORDINATE CONVERSION
+
+      function getWebGLCoordinates(e, canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const pixelRatio = window.devicePixelRatio || 1;
+        const canvasWidth = canvas.width / pixelRatio;
+        const canvasHeight = canvas.height / pixelRatio;
+
+        //coordinates relative to the canvas's displayed size
+        return {
+          x:
+            (((e.clientX - rect.left) * (canvas.width / rect.width)) /
+              canvasWidth -
+              0.5) *
+              2 -
+            1,
+          y:
+            (((e.clientY - rect.top) * (canvas.height / rect.height)) /
+              canvasHeight -
+              0.5) *
+              -2 +
+            1,
+        };
+      }
+
+      // EVENT HANDLERS
+      function handleMouseDown(e) {
+        if (e.button !== 0) return;
+        state.isMouseDown = true;
+
+        const coords = getWebGLCoordinates(e, canvas1);
+        state.mouseX = coords.x;
+        state.mouseY = coords.y;
+
+        state.selectedPoint = state.points.findIndex((p) => {
+          const dx = p.x - state.mouseX;
+          const dy = p.y - state.mouseY;
+          return dx * dx + dy * dy < state.hitAreaRadius * state.hitAreaRadius;
+        });
+
+        if (state.selectedPoint !== -1) {
+          state.isDragging = true;
+        }
+      }
+
+      function handleMouseMove(e) {
+        const coords = getWebGLCoordinates(e, canvas1);
+        state.mouseX = coords.x;
+        state.mouseY = coords.y;
+
+        if (state.isDragging && state.selectedPoint !== -1) {
+          state.points[state.selectedPoint].x = state.mouseX;
+          state.points[state.selectedPoint].y = state.mouseY;
+        }
+      }
+
+      function handleMouseUp() {
+        state.isMouseDown = false;
+        state.isDragging = false;
+        state.selectedPoint = -1;
+      }
+
+      function handleContextMenu(e) {
+        e.preventDefault();
+        const coords = getWebGLCoordinates(e, canvas1);
+        state.points.push({ x: coords.x, y: coords.y, z: -3.5 });
+      }
+
+      // RENDERING FUNCTIONS
+      function drawHitAreas() {
+        state.points.forEach((p, i) => {
+          M.S()
+            .move(p.x, p.y, p.z)
+            .scale(
+              state.hitAreaRadius,
+              state.hitAreaRadius,
+              state.hitAreaRadius
+            )
+            .draw(
+              Disk(30),
+              [1, 0.5, 0, i === state.selectedPoint ? 0.5 : 0.2],
+              1
+            )
+            .R();
+        });
+      }
+
+      function drawPoints() {
+        state.points.forEach((p) => {
+          M.S()
+            .move(p.x, p.y, p.z)
+            .scale(0.05, 0.05, 0.05)
+            .draw(Sphere(10), [1, 0, 0], 1)
+            .R();
+        });
+      }
+
+      function drawMouseIndicator() {
+        if (state.isMouseDown) {
+          M.S()
+            .move(state.mouseX, state.mouseY, -3.5)
+            .scale(
+              state.hitAreaRadius,
+              state.hitAreaRadius,
+              state.hitAreaRadius
+            )
+            .draw(Disk(30), [0, 1, 0, 0.3], 1)
+            .R();
+        }
+      }
+
+      function drawSplinePath(t) {
+        if (state.points.length >= 4) {
+          const steps = 50;
+          for (let i = 0; i < steps; i++) {
+            const t = i / (steps - 1);
+            const x = catmullRom(
+              state.points.map((p) => p.x),
+              t
+            );
+            const y = catmullRom(
+              state.points.map((p) => p.y),
+              t
+            );
+            const z = catmullRom(
+              state.points.map((p) => p.z),
+              t
+            );
+
+            M.S()
+              .move(x, y, z)
+              .scale(0.02, 0.02, 0.02)
+              .draw(Sphere(8), [0.5, 0.5, 1], 1, 13, 11)
+              .R();
+          }
+        }
+      }
+
+      function drawFrame() {
+        requestAnimationFrame(drawFrame);
+        const t = (Date.now() % 8000) / 8000;
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        M.identity();
+        M.perspective(3);
+
+        drawHitAreas();
+        drawPoints();
+        drawMouseIndicator();
+        drawSplinePath(t);
+        if (state.points.length >= 4) {
+        const x = catmullRom(state.points.map((p) => p.x), t);
+        const y = catmullRom(state.points.map((p) => p.y), t);
+        const z = catmullRom(state.points.map((p) => p.z), t);
+
+        // position for direction
+        const tNext = (t + 0.01) % 1;
+        const nextX = catmullRom(state.points.map((p) => p.x), tNext);
+        const nextY = catmullRom(state.points.map((p) => p.y), tNext);
+        
+        // direction vector
+        const dx = nextX - x;
+        const dy = nextY - y;
+        
+        // angle from direction
+        const angle = Math.atan2(dy, dx);
+
+        M.S()
+            .move(x, y, z)
+            .turnZ(angle + Math.PI/2) 
+            .turnX(Math.PI/2)
+            .turnZ(Math.PI/2)
+
+            .scale(0.5, 0.5, 0.5)
+            .S();
+        toy(t)
+        .R();
+    }
+  }
+
+      // INITIALIZATION
+      function init() {
+        loadTextures();
+        canvas1.addEventListener("mousedown", handleMouseDown);
+        canvas1.addEventListener("mousemove", handleMouseMove);
+        canvas1.addEventListener("mouseup", handleMouseUp);
+        canvas1.addEventListener("contextmenu", handleContextMenu);
+        requestAnimationFrame(drawFrame);
+      }
+
+      init();
+    </script>
+  </center>
+</body>
