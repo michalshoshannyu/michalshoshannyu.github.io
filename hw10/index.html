@@ -1,0 +1,147 @@
+<body bgcolor=#808080><font face=courier>
+   <center><canvas id=canvas1 width=900 height=700></canvas>
+   <script src=lib.js></script>
+   <script>
+   
+   trackMouse(canvas1);
+   texture(0,'brick.png');
+   texture(1, "riso-color-tex-wood-bright.jpg"); // WOOD-B
+   texture(2, "riso-color-tex-wood-M.jpg"); // WOOD-B
+   texture(3, "wood.jpg"); // BUMP WOOD
+      
+   
+   let myCube     = Cube();
+   let myCylinder = Cylinder(20);
+   let mySphere   = Sphere(20);
+   
+   addMaterial(1, `color = mix(color, vec3(.5), min(.95,.007 * dot(vTpos, vTpos)));`);
+   startGL(canvas1);
+   
+   let spring = new Spring();
+   spring.setMass(3);
+   
+   function drawFrame() {
+      requestAnimationFrame(drawFrame);
+      let time = Date.now() / 1000;
+   
+      VM.identity().perspective(3).scale(1,canvas1.width/canvas1.height,1);
+   
+      if (! isPhone())
+         VM.turnX(canvas1.ry/30).turnY(canvas1.rx/30);
+   
+      drawScene(() => {
+         material = 1;
+   
+         // BASE CUBE
+         let anchor = [0,.0,-3];
+         M.S().move(anchor).scale(0.2,0.05,0.2).draw(myCube,[1, 1, 1], 1, 2, 3).R();
+   
+         let bounceHeight = .5 * (1 + S(2 * time)/6);
+         let target = [0-.2*ease(.2+S(2*time+S(2*time))), bounceHeight - .2, -3];
+         //let swing = [(.2+S(2*time+S(4*time))), (.2+C(2*time+C(4*time))) - .2, -3];
+         let swingTime = time * 2.5; 
+         let swingAmplitude = 0.4; 
+         let swing = [
+            swingAmplitude * S(swingTime),
+            +0.2 - 0.4 * C(swingTime * 0.1)/2, 
+            -3 + 0.1 * C(swingTime)
+         ];
+         spring.setForce(target[0]);
+         spring.update(.03);
+         let x = spring.getPosition();
+         let springEnd = [x, target[1], target[2]];
+   
+         // DRAW SPRING
+         let connection = 10;
+         for(let i = 0; i < connection; i++) {
+            let t = i / connection;
+            let pos1 = mix(anchor, springEnd, t);
+            let pos2 = mix(anchor, springEnd, (i + 1) / connection);
+            let midpoint = mix(pos1, pos2, 0.5);
+            let y = .05 * C(15 * t + time * 3);
+            
+            M.S().move(midpoint)
+                .aim(subtract(pos2, pos1))
+                .scale(.03, .03, distance(pos1, pos2))
+                .draw(CreateMesh(50, 8, (u,v) => {
+                   let r = .1;
+                   let ct = C(8 * Math.PI * u);
+                   let st = S(8 * Math.PI * u);
+                   let cp = C(12 * Math.PI * v);
+                   let sp = S(12 * Math.PI * v);
+                   let x = (1 + r + cp) * ct,
+                       y = (1 + r + cp) * st,
+                       z = (2 * u -1) + r * sp
+                   return [x,y,z];
+                }),[1,1,3])
+                .R();
+         }
+   
+         // BASE RED CUBE
+         let mySphere = Sphere(20);
+
+         M.S().move(springEnd).scale(0.25,0.02,0.1).draw(myCube,[1, 1, 1], 1, 2, 3).R();
+         
+         let seatPos0 = [springEnd[0]-0.00, springEnd[1] + 0.07, springEnd[2]];
+         M.S().move(seatPos0).scale(0.15,0.04,0.1).draw(mySphere,[1, 1, 1], 1).R();
+
+         // SEAT 
+         let seatPos = [springEnd[0]+0.25, springEnd[1] - 0.03, springEnd[2]];
+         //M.S().move(seatPos).scale(0.06,0.1,0.02).draw(mySphere,[1, 1, 1], 1, 2, 3).R();
+         M.S().move(seatPos).scale(0.1,0.1,0.03).draw(mySphere,[1, 1, 1], 1, 2, 3).R();
+
+
+         let seatPos2 = [springEnd[0]-0.0, springEnd[1] + 0.02, springEnd[2]];
+         M.S().move(seatPos2).scale(0.25,0.05,0.1).draw(myCube,[1, 1, 1], 1, 1, 3).R();
+
+         let seatPos3 = [springEnd[0]-0.2, springEnd[1] + 0.06, springEnd[2]];
+         M.S().move(seatPos3).scale(0.05,0.1,0.2).draw(myCube,[1, 1, 1], 1, 1, 3).R();
+
+         let seatPos4 = [springEnd[0]-0.25, springEnd[1] - 0.02, springEnd[2]];
+         M.S().move(seatPos4).scale(0.1,0.1,0.05).draw(mySphere,[1, 1, 1], 1, 1, 3).R();
+
+         // HANDLE
+         let handleBasePos = [springEnd[0]-0.2, springEnd[1] + 0.2, springEnd[2] - 0.1];
+         M.S().move(handleBasePos).scale(0.02,0.1,0.03).draw(myCube,[1, 1, 1], 1, 2, 3).R();
+   
+         // HANDLE TOP 
+         let handleTopPos = [springEnd[0]-0.2, springEnd[1] + 0.3, springEnd[2] - 0.1];
+         M.S().move(handleTopPos).turnY(Math.PI/2).scale(0.2,0.03,0.03).draw(myCube,[1, 1, 1], 1, 2, 3).R();
+   
+         // BACKGROUND
+         M.S().move(0,0,-12).scale(2).draw(myCube,[1,1,1],1).R();
+
+         // swings
+         let s = [1.0,.8,-3];
+         let w = [swing[0]+0.9,swing[1]-0.7,swing[2]];
+         let e = add(s,ik(.5,.5,subtract(w,s),[0,-1,0]));
+
+         M.S().move(s).scale(.05).draw(mySphere  ,[1, 1, 1], 1, 2, 3).R();
+         M.S().move(w).scale(.05).draw(mySphere  ,[1, 1, 1], 1, 2, 3).R();
+
+         let s2 = [1.0,.8,-2];
+         let w2 = [swing[0]+0.9,swing[1]-0.7,swing[2]+1];
+                  // let w2 = [swing[0]+0.9,swing[1]-0.7,swing[2]+1];
+
+         let e2 = add(s2,ik(.5,.5,subtract(w2,s2),[0,-1,0]));
+
+         M.S().move(s2).scale(.05).draw(mySphere  ,[1, 1, 1], 1, 2, 3).R();
+         M.S().move(w2).scale(.05).draw(mySphere  ,[1, 1, 1], 1, 2, 3).R();
+
+
+         M.S().move(mix(s,e,.5)).aim(subtract(e,s)).scale(.02,.02,distance(s,e)/2).draw(myCube,[1,1,1]).R();
+         M.S().move(mix(e,w,.5)).aim(subtract(w,e)).scale(.02,.02,distance(e,w)/2).draw(myCube,[1,1,1]).R();
+
+         M.S().move(mix(s2,e2,.5)).aim(subtract(e2,s2)).scale(.02,.02,distance(s2,e2)/2).draw(myCube,[1,1,1]).R();
+         M.S().move(mix(e2,w2,.5)).aim(subtract(w2,e2)).scale(.02,.02,distance(e2,w2)/2).draw(myCube,[1,1,1]).R();
+
+         M.S().move(mix(w,w2,.5)).aim(subtract(w2,w)).scale(.1,.04,distance(e2,e)/2).draw(myCube,[1,1,1] ,1, 2, 3).R();
+
+
+      });
+   }
+   requestAnimationFrame(drawFrame);
+   
+   </script>
+   </font></center>
+   </body>
