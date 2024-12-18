@@ -1,0 +1,1224 @@
+
+<body bgcolor="#ffffff">
+  <font face="courier">
+    <center>
+      <table>
+        <tr>
+          <th><canvas id="canvas1" width="700" height="700"></canvas></th>
+        </tr>
+      </table>
+    </center>
+    <script src="lib.js"></script>
+    <script>
+
+
+// ==============================================
+// Initial Setup and Configuration
+// ==============================================
+
+function lerp(start, end, factor) {
+    return start + (end - start) * factor;
+}
+
+let continuousTime = 0;
+let lastFrameTime = Date.now();
+let currentSpeed = 1.0; 
+let targetSpeed = 1.0; 
+const SPEED_LERP = 0.05;
+
+
+let treeStates = [];
+const TREE_HEIGHT = .3;
+const TREE_WIDTH = 0.2;
+const LEAVES_PER_LEVEL = 10;
+const LEVELS = 20;
+const ACTIVATION_DISTANCE = 45.;
+
+let currentLoop = 0;
+let lastLoop = 0;
+
+
+// virtual sliders
+const heightSlider = { value: 125 }; 
+const hipwidthSlider = { value: 200 }; 
+const radiusSlider = { value: 50 }; 
+const facingSlider = { value: 50 };
+const headingSlider = { value: 50 };
+const strideSlider = { value: 50 };
+
+const legliftSlider = { value: 50 };
+const legliftSlider2 = { value: 70 };
+
+const hipswaySlider = { value: 50 };
+const hipswaySlider2 = { value: 70 };
+
+const twistSlider = { value: 50 };
+
+const paceSlider = { value: 50 };
+const paceSlider2 = { value: 60 };
+const goSlider = { value: 100 };
+const goSlider2 = { value: 120 };
+
+// setup GL and basic shapes
+trackMouse(canvas1);
+startGL(canvas1);
+let myCube = Cube();
+let myTube = Tube(20);
+let mySphere = Sphere(20);
+
+// initial state variables
+let downForce = 0;
+let previousTime, t = 0, tx = 0, tz = 0;
+
+// ==============================================
+// Physics System
+// ==============================================
+let sSway = new Spring();
+let sRoll = new Spring();
+let sTorso = new Spring();
+
+// Configure springs
+sSway.setMass(5);
+sRoll.setMass(5);
+sTorso.setMass(3);
+
+// ==============================================
+// Mood System Configuration
+// ==============================================
+const character1MoodPresets = {
+    happy: {
+        stride: 60,
+        hipsway: 90,
+        leglift: 70,
+        pace: 50,
+        twist: 50
+    },
+    sad: {
+        stride: 95,
+        hipsway: 300,
+        leglift: 40,
+        pace: 30,
+        twist: 50
+    },
+    tired: {
+        stride: 50,
+        hipsway: 400,
+        leglift: 30,
+        pace: 19,
+        twist: 40
+    },
+    young: {
+        stride: 70,
+        hipsway: 100,
+        leglift: 10,
+        pace: 70,
+        twist: 60
+    },
+    old: {
+        stride: 70,
+        hipsway: 500,
+        leglift: 25,
+        pace: 25,
+        twist: 50
+    }
+};
+
+const character2MoodPresets = {
+    happy: {
+        stride: 140,  
+        hipsway: 30,  
+        leglift: 120,   
+        pace: 20,     
+        twist: 50      
+    },
+    sad: {
+        stride: 130,    
+        hipsway: 200,   
+        leglift: 120,  
+        pace: 30,
+        twist: 50 
+    },
+    tired: {
+        stride: 35, 
+        hipsway: 400,
+        leglift: 25,
+        pace: 19,
+        twist: 25
+    },
+    young: {
+        stride: 85,    
+        hipsway: 80,
+        leglift: 75,
+        pace: 85,
+        twist: 70
+    },
+    old: {
+        stride: 60,    
+        hipsway: 400,
+        leglift: 40,
+        pace: 25,
+        twist: 50
+    }
+};
+
+let char1State = {
+    currentMood: "neutral",
+    moodValues: {
+        stride: 50,   
+        hipsway: 50,
+        leglift: 50,
+        pace: 50,
+        twist: 50
+    }
+};
+
+let char2State = {
+    currentMood: "neutral",
+    moodValues: {
+        stride: 50,   
+        hipsway: 50,
+        leglift: 50,
+        pace: 50,
+        twist: 50
+    }
+};
+
+function setMood(mood) {
+    // Transition for character 1
+    const char1Target = character1MoodPresets[mood];
+    const char1Start = { ...char1State.moodValues };
+    char1State.currentMood = mood;
+
+    // Transition for character 2
+    const char2Target = character2MoodPresets[mood];
+    const char2Start = { ...char2State.moodValues };
+    char2State.currentMood = mood;
+
+    console.log("2",char2State,"1",char1State )
+    const startTime = Date.now();
+    const duration = 1000;
+
+    function updateBothCharacters() {
+        const elapsedTime = Date.now() - startTime;
+        const t = Math.min(elapsedTime / duration, 1);
+        const easedT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        // Update character 1 values
+        char1State.moodValues = {
+            stride: char1Start.stride + (char1Target.stride - char1Start.stride) * easedT,
+            hipsway: char1Start.hipsway + (char1Target.hipsway - char1Start.hipsway) * easedT,
+            leglift: char1Start.leglift + (char1Target.leglift - char1Start.leglift) * easedT,
+            pace: char1Start.pace + (char1Target.pace - char1Start.pace) * easedT,
+            twist: char1Start.twist + (char1Target.twist - char1Start.twist) * easedT
+        };
+
+        // Update character 2 values
+        char2State.moodValues = {
+            stride: char2Start.stride + (char2Target.stride - char2Start.stride) * easedT,
+            hipsway: char2Start.hipsway + (char2Target.hipsway - char2Start.hipsway) * easedT,
+            leglift: char2Start.leglift + (char2Target.leglift - char2Start.leglift) * easedT,
+            pace: char2Start.pace + (char2Target.pace - char2Start.pace) * easedT,
+            twist: char2Start.twist + (char2Target.twist - char2Start.twist) * easedT
+        };
+
+        if (t < 1) requestAnimationFrame(updateBothCharacters);
+    }
+
+    updateBothCharacters();
+}
+
+// ==============================================
+// Posture System Configuration
+// ==============================================
+
+const posturePresets = {
+    submissive: {
+        neckLength: 0.6,
+        headTilt: -0.7,
+        shoulderHeight: -0.05,
+        shoulderWidth: 0.35,
+        headOffset: [0, 0.15, .15],
+        spineCurve: 0.1,
+        armHeight: -0.2,    
+        armForward: 0.1,    
+        elbowBend: 0.2,   
+        armSpread:3,    
+
+    },
+    confident: {
+        neckLength: 0.7,
+        headTilt: 0.1,
+        shoulderHeight: 0.04,
+        shoulderWidth: 1.2,
+        headOffset: [0, 0.12, -.02],
+        spineCurve: -0.1,
+
+        chestWidth: .0,     // chest wider
+        chestLift: 1,     // lifts the chest up
+        chestForward: -3.0,   //chest forward
+
+        armHeight: -0.1,    
+        armSpread: 0.9,   
+        armForward: 0.05,  
+        elbowBend: -0.1  
+    },
+    adolescent: {
+        neckLength: 0.7,
+        headTilt: 0.7,
+        shoulderHeight: 0.35,
+        shoulderWidth: 1.3,
+        headOffset: [0, 0.12, .09],
+        spineCurve: 5.5,
+
+        chestWidth: .0,    
+        chestLift: 1,     
+        chestForward: -3.0,  
+
+        armHeight: -0.6,    
+        armSpread: 0.9,   
+        armForward: 0.07,  
+        elbowBend: -0.1  
+    },
+    neutral: {
+        neckLength: 1.0,
+        headTilt: 0,
+        shoulderHeight: 0,
+        shoulderWidth: 1.0,
+        headOffset: [0, 0, 0],
+        spineCurve: 0,
+        
+        armHeight: -0.1, 
+        armSpread: 1.0, 
+        armForward: 0,  
+        elbowBend: 0.1  
+    }
+};
+
+let currentPosture = "neutral";
+let currentPostureSettings = posturePresets[currentPosture];
+
+function setCharacterPosture(postureName) {
+    if (!posturePresets[postureName]) {
+        console.error(`Unknown posture: ${postureName}`);
+        return;
+    }
+    currentPosture = postureName;
+    currentPostureSettings = posturePresets[postureName];
+}
+
+// ==============================================
+// Event Handlers
+// ==============================================
+
+document.addEventListener("keydown", (event) => {
+    switch (event.key) {
+        case "h": setMood("happy"); break;
+        case "s": setMood("sad"); break;
+        case "t": setMood("tired"); break;
+        case "y": setMood("young"); break;
+        case "o": setMood("old"); break;
+        case "1": setCharacterPosture("submissive"); break;
+        case "2": setCharacterPosture("neutral"); break;
+        case "3": setCharacterPosture("confident"); break;
+        case "4": setCharacterPosture("adolescent"); break;
+
+    }
+});
+
+
+// ==============================================
+// Drawing Helper Functions
+// ==============================================
+
+function joint(J,r) {
+    return M.S().move(J).scale(r).draw(mySphere, [1, 1, 1]).R();
+}
+
+function limb(A, B,r) {
+    return M.S()
+        .move(mix(A, B, 0.5))
+        .aim(subtract(A, B))
+        .scale(r, r, distance(A, B) / 2)
+        .draw(myTube, [1, 1, 1])
+        .R();
+}
+
+function limb2(A, B,r) {
+    M.S();
+    let mid = mix(A, B, 0.5);
+    let dist = distance(A, B);
+    let tubeRadius = r * 1;
+    let segments = 40;
+
+
+    for (let i = 0; i < segments - 1; i++) {
+        let t1 = i / (segments - 1);
+        let t2 = (i + 1) / (segments - 1);
+        let p1 = [
+            Math.cos(t1 * Math.PI) * dist * 0.5,
+            Math.sin(t1 * Math.PI) * dist * 0.5,
+            0
+        ];
+        let p2 = [
+            Math.cos(t2 * Math.PI) * dist * 0.5,
+            Math.sin(t2 * Math.PI) * dist * 0.5,
+            0
+        ];
+
+        M.S()
+            .move(mid[0] + p1[0], mid[1] + p1[1], mid[2])
+            .aim(subtract(p2, p1))
+            .scale(tubeRadius, tubeRadius, distance(p1, p2))
+            .draw(myTube, [1, 1, 1], 1);
+        M.R();
+    }
+    M.R();
+}
+
+// ==============================================
+// Character Drawing System
+// ==============================================
+
+function char(params) {
+  const {
+    hw,torsoCenter, fc, fs, torsoHeight, torsoTwist,
+        shoulderLift, shoulderSway, shoulderWidth,
+        r, LE, RE, LHand, RHand, LF, RF, LH, RH,
+        LK, RK, currentPostureSettings
+    } = params;
+
+    M.S().move(0, -0.6, 0);
+    const moodValues = char1State.moodValues;
+    let stride = moodValues.stride / 100;
+    let leglift = moodValues.leglift / 100;
+    let hipsway = moodValues.hipsway / 100;
+    let twist = moodValues.twist / 100;
+    let pace = moodValues.pace / 100;
+    
+    let modifiedShoulderWidth = shoulderWidth * currentPostureSettings.shoulderWidth;
+
+    let modifiedLS = [
+    torsoCenter[0] - modifiedShoulderWidth * fc * currentPostureSettings.armSpread + shoulderSway + currentPostureSettings.headOffset[0] *0.2,
+    torsoHeight + torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight +currentPostureSettings.headOffset[0] *0.1,
+    torsoCenter[2] - modifiedShoulderWidth * fs  + currentPostureSettings.headOffset[2] *0.2
+];
+
+let modifiedRS = [
+    torsoCenter[0] + modifiedShoulderWidth * fc * currentPostureSettings.armSpread - shoulderSway + currentPostureSettings.headOffset[0] *0.2,
+    torsoHeight - torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight+ currentPostureSettings.headOffset[0] *0.1,
+    torsoCenter[2] + modifiedShoulderWidth * fs + currentPostureSettings.headOffset[2] *0.2
+];
+    // neck and head position
+    let shoulderArcTop = [
+        mix(modifiedLS, modifiedRS, 0.5)[0],
+        Math.max(modifiedLS[1], modifiedRS[1]) + r * 3.5 * currentPostureSettings.neckLength,
+        mix(modifiedLS, modifiedRS, 0.5)[2]
+    ];
+
+    let headPos = [
+        shoulderArcTop[0] + torsoTwist * 0.05 + currentPostureSettings.headOffset[0],
+        shoulderArcTop[1] + r * 2 * currentPostureSettings.neckLength + currentPostureSettings.headOffset[1],
+        shoulderArcTop[2] + currentPostureSettings.headOffset[2]
+    ];
+
+    
+    headPos[1] += currentPostureSettings.headTilt * r;
+
+          let ponytailSpring = new Spring();
+          ponytailSpring.setMass(2);
+          ponytailSpring.setDamping(0.85);
+
+          let verticalForce = Math.max(0, S(TAU * t)) * 0.5;
+          ponytailSpring.setForce(verticalForce);
+          ponytailSpring.update(0.1);
+
+          // ponytail segments
+          let numSegments = 4;
+          let segmentLength = r * 0.8;
+          let springOffset = ponytailSpring.getPosition();
+
+          let ponytailPoints = [
+            {
+              pos: [headPos[0]+currentPostureSettings.headOffset[2]*0.2, headPos[1] - 0.52-currentPostureSettings.headOffset[2]*0.1, headPos[2] - r *1.5 +currentPostureSettings.headOffset[2]*0.2],
+              offset: [],
+            },
+          ];
+
+          //ponytail points
+          for (let i = 1; i <= numSegments; i++) {
+            let t = i / numSegments;
+            let prevPoint = ponytailPoints[i - 1];
+            let springEffect = springOffset * t * 0.5;
+            let verticalDrop = segmentLength + springEffect;
+
+            ponytailPoints.push({
+              pos: [
+                prevPoint.pos[0],
+                prevPoint.pos[1] - verticalDrop * (1 + t * 0.2),
+                prevPoint.pos[2] + torsoTwist *1.1 * t,
+              ],
+              offset: springEffect,
+            });
+          }
+
+    // Draw character parts
+    // Base
+    joint(LF,r); joint(RF,r); joint(LH,r); joint(RH,r); joint(LK,r); joint(RK,r);
+    limb(LF, LK,r); limb(RF, RK,r); limb(LK, LH,r); limb(RK, RH,r);
+    limb2(LH, RH,r);
+
+    // Upper body
+    joint(modifiedLS,r); joint(modifiedRS,r);
+    joint(LE,r); joint(RE,r); joint(LHand,r); joint(RHand,r);
+ 
+    limb(modifiedLS, LE,r); limb(LE, LHand,r);
+    limb(modifiedRS, RE,r); limb(RE, RHand,r);
+    limb2(modifiedLS, modifiedRS,r);
+
+    // Head
+    M.S()
+        .move(headPos[0], headPos[1], headPos[2])
+        .scale(r * 1.2, r * 1.2, r * 1.2)
+        .draw(mySphere, [1, 1, 1]);
+
+    M.S()
+        .move(headPos[0], headPos[1]-1.2 , headPos[2]+1.2)
+        .scale(r * 2.6, r * 2.6, r * 2.6)
+        .draw(mySphere, [1, 5, 20]);
+    M.R();
+    M.R();
+
+    // Neck
+    M.S()
+        .move(mix(shoulderArcTop, headPos, 0.5))
+        .aim(subtract(shoulderArcTop, headPos))
+        .scale(r * 0.4, r * 0.4, distance(shoulderArcTop, headPos) / 2)
+        .draw(myTube, [1, 1, 1])
+        .R();
+
+    M.R();
+
+    //ponytail
+    for (let i = 0; i < ponytailPoints.length - 1; i++) {
+              let start = ponytailPoints[i].pos;
+              let end = ponytailPoints[i + 1].pos;
+    
+    M.S()
+                .move(mix(start, end, 0.5))
+                .aim(subtract(start, end))
+                .scale(
+                  r * 1.5 * (1 - i / numSegments),
+                  r * 1.5 * (1 - i / numSegments),
+                  distance(start, end) * 1.5
+                )
+                .draw(mySphere, [1, 1, 1])
+                .R();
+            }
+
+}
+
+function char2(params) {
+  const {
+    hw,torsoCenter, fc, fs, torsoHeight, torsoTwist,
+        shoulderLift, shoulderSway, shoulderWidth,
+        r, LE, RE, LHand, RHand, LF, RF, LH, RH,
+        LK, RK, currentPostureSettings
+    } = params;
+
+    M.S().move(0, -0.6, 0);
+
+    const moodValues = char2State.moodValues;
+    let stride = (moodValues.stride / 100);
+    let leglift = (moodValues.leglift / 100);
+    let hipsway = (moodValues.hipsway / 100);
+    let twist = (moodValues.twist / 100);
+    let pace = (moodValues.pace / 100);
+
+    let modifiedShoulderWidth = shoulderWidth* currentPostureSettings.shoulderWidth;
+
+    let modifiedLS = [
+    torsoCenter[0] - modifiedShoulderWidth * fc * currentPostureSettings.armSpread + shoulderSway + currentPostureSettings.headOffset[0] *0.2,
+    torsoHeight + torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight +currentPostureSettings.headOffset[0] *0.1+0.1,
+    torsoCenter[2] - modifiedShoulderWidth * fs  + currentPostureSettings.headOffset[2] *0.2
+];
+
+let modifiedRS = [
+    torsoCenter[0] + modifiedShoulderWidth * fc * currentPostureSettings.armSpread - shoulderSway + currentPostureSettings.headOffset[0] *0.2,
+    torsoHeight - torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight+ currentPostureSettings.headOffset[0] *0.1+0.1,
+    torsoCenter[2] + modifiedShoulderWidth * fs + currentPostureSettings.headOffset[2] *0.2
+];
+    //neck and head 
+    let shoulderArcTop = [
+        mix(modifiedLS, modifiedRS, 0.5)[0],
+        Math.max(modifiedLS[1], modifiedRS[1]) + r * 2.5 * currentPostureSettings.neckLength,
+        mix(modifiedLS, modifiedRS, 0.5)[2]
+    ];
+
+    let headPos = [
+        shoulderArcTop[0] + torsoTwist * 0.05 + currentPostureSettings.headOffset[0],
+        shoulderArcTop[1] + r * 2 * currentPostureSettings.neckLength + currentPostureSettings.headOffset[1],
+        shoulderArcTop[2] + currentPostureSettings.headOffset[2]
+    ];
+
+    //head tilt
+    headPos[1] += currentPostureSettings.headTilt * r;
+
+          //ponytail
+          let ponytailSpring = new Spring();
+          ponytailSpring.setMass(2);
+          ponytailSpring.setDamping(0.85);
+
+          let verticalForce = Math.max(0, S(TAU * t)) * 0.5;
+          ponytailSpring.setForce(verticalForce);
+          ponytailSpring.update(0.1);
+
+          //ponytail segments
+          let numSegments = 4;
+          let segmentLength = r * 0.5;
+          let springOffset = ponytailSpring.getPosition();
+
+          let ponytailPoints = [
+            {
+              pos: [headPos[0]+currentPostureSettings.headOffset[2]*0.1, headPos[1] - 0.52-currentPostureSettings.headOffset[2]*0.1, headPos[2] - r *1.1 +currentPostureSettings.headOffset[2]*0.1+0.05],
+              offset: [],
+            },
+          ];
+
+          //ponytail points
+          for (let i = 1; i <= numSegments; i++) {
+            let t = i / numSegments;
+            let prevPoint = ponytailPoints[i - 1];
+            let springEffect = springOffset * t * 0.5;
+            let verticalDrop = segmentLength + springEffect;
+
+            ponytailPoints.push({
+              pos: [
+                prevPoint.pos[0],
+                prevPoint.pos[1] + verticalDrop * (1 + t * 0.2),
+                prevPoint.pos[2] + torsoTwist *1.1 * t,
+              ],
+              offset: springEffect,
+            });
+          }
+
+    // Draw character parts
+    // Base
+    joint(LF,r); joint(RF,r); joint(LH,r); joint(RH,r); joint(LK,r); joint(RK,r);
+    limb(LF, LK,r); limb(RF, RK,r); limb(LK, LH,r); limb(RK, RH,r);
+    limb2(LH, RH,r);
+
+    // Upper body
+      joint(modifiedLS,r); joint(modifiedRS,r);
+    joint(LE,r); joint(RE,r); joint(LHand,r); joint(RHand,r);
+    limb(modifiedLS, LE,r); limb(LE, LHand,r);
+    limb(modifiedRS, RE,r); limb(RE, RHand,r);
+    limb2(modifiedLS, modifiedRS,r);
+
+    M.S()
+    .move(mix(modifiedLS, modifiedRS, 0.5)[0], 
+          mix(modifiedLS, modifiedRS, 0.5)[1], 
+          mix(modifiedLS, modifiedRS, 0.5)[2])
+    .scale(r * 2.2, r * 2.2, r * 2.2)
+    .draw(mySphere, [1, 1, 1]);  
+    M.R();
+
+    M.S();
+    let waistCenter = mix(LH, RH, 0.5);
+    let waistRadius = distance(LH, RH) * 0.7;
+    let segments = 20;
+
+    for (let i = 0; i < segments; i++) {
+        let angle1 = (i / segments) * TAU;
+        let angle2 = ((i + 1) / segments) * TAU;
+        
+        let p1 = [
+            waistCenter[0] + C(angle1) * waistRadius,
+            waistCenter[1],
+            waistCenter[2] + S(angle1) * waistRadius
+        ];
+        
+        let p2 = [
+            waistCenter[0] + C(angle2) * waistRadius,
+            waistCenter[1],
+            waistCenter[2] + S(angle2) * waistRadius
+        ];
+        
+        M.S()
+            .move(mix(p1, p2, 0.5))
+            .aim(subtract(p1, p2))
+            .scale(r * 2.3, r * 2.3, distance(p1, p2))
+            .draw(myTube, [1, 1, 1]);  
+        M.R();
+    }
+    M.R();
+    
+    // Head
+    M.S()
+        .move(headPos[0], headPos[1], headPos[2])
+        .scale(r * 1.2, r * 1.2, r * 1.2)
+        .draw(mySphere, [1, 1, 1]);
+
+    M.S()
+        .move(headPos[0], headPos[1] + r * 0.8, headPos[2])
+        .scale(r * 0.6, r * 0.6, r * 0.6)
+        .draw(mySphere, [1, 1, 1]);
+    M.R();
+    M.R();
+
+    // Neck
+    M.S()
+        .move(mix(shoulderArcTop, headPos, 0.5))
+        .aim(subtract(shoulderArcTop, headPos))
+        .scale(r * 0.4, r * 0.4, distance(shoulderArcTop, headPos) / 2)
+        .draw(myTube, [1, 1, 1])
+        .R();
+
+    M.R();
+
+    //ponytail
+    for (let i = 0; i < ponytailPoints.length - 1; i++) {
+              let start = ponytailPoints[i].pos;
+              let end = ponytailPoints[i + 1].pos;
+    
+    M.S()
+                .move(mix(start, end, 0.5))
+                .aim(subtract(start, end))
+                .scale(
+                  r * -1.5 * (1 - i / numSegments),
+                  r * -1.5 * (1 - i / numSegments),
+                  distance(start, end) * 2.5
+                )
+                .draw(mySphere, [1, 1, 1])
+                .R();
+            }
+
+}
+
+
+// ==============================================
+// Main Animation Loop
+// ==============================================
+function initializeTrees() {
+    treeStates = [];
+    
+    const treePoints = [0.4, 0.5, 0.99];
+    
+    treePoints.forEach(t => {
+        const x = catmullRom(state.points.map(p => p.x), t);
+        const y = catmullRom(state.points.map(p => p.y), t);
+        const z = catmullRom(state.points.map(p => p.z), t);
+        
+        const side = treePoints.indexOf(t) % 1 === 0 ? -0.5 : 0.6;
+        
+        treeStates.push({
+            position: { 
+                x: x + side, 
+                y: y + TREE_HEIGHT, 
+                z: z - 0.5 
+            },
+            leaves: Array(LEVELS).fill().map(() => 
+                Array(LEAVES_PER_LEVEL).fill().map(() => ({ 
+                    visible: false, 
+                    animationProgress: 0 
+                }))
+            ),
+            activated: false 
+        });
+    });
+}
+
+function drawTrees(charPosition) {
+    currentLoop = Math.floor(continuousTime);
+    
+    if (currentLoop > lastLoop) {
+        treeStates.forEach(tree => {
+            tree.activated = false;
+            tree.leaves.forEach(level => {
+                level.forEach(leaf => {
+                    leaf.visible = false;
+                    leaf.animationProgress = 0;
+                });
+            });
+        });
+        lastLoop = currentLoop;
+    }
+
+    treeStates.forEach((tree, treeIndex) => {
+        const distance = Math.sqrt(
+            Math.pow(tree.position.x - charPosition.x, 2) + 
+            Math.pow(tree.position.z - charPosition.z*2.2, 2)
+        );
+
+        const totalLeaves = LEVELS * LEAVES_PER_LEVEL;
+        const animationSpeedPerLeaf = 0.05; 
+
+        if (distance < ACTIVATION_DISTANCE && !tree.activated) {
+            tree.activated = true;
+            let leafCount = 0;
+            
+            tree.leaves.forEach((level, levelIndex) => {
+                level.forEach((leaf, leafIndex) => {
+                    leaf.startTime = leafCount * animationSpeedPerLeaf;
+                    leaf.visible = true;
+                    leaf.animationProgress = 0;
+                    leafCount++;
+                });
+            });
+        }
+
+        // Draw trunk
+        M.S();
+        M.move(tree.position.x, tree.position.y, tree.position.z);
+        M.scale(0.02, TREE_HEIGHT, 0.02);
+        M.draw(myTube, [1, 1, 1]);
+        M.R();
+
+        // animate leaves 
+        let currentTime = continuousTime * 10;
+        
+        tree.leaves.forEach((level, levelIndex) => {
+            const levelHeight = (levelIndex / LEVELS) * TREE_HEIGHT * 2;
+            const levelRadius = TREE_WIDTH * (1 - levelIndex/LEVELS * 0.9);
+            
+            level.forEach((leaf, leafIndex) => {
+                if (leaf.visible) {
+                    if (currentTime > leaf.startTime) {
+                        const angle = (leafIndex / LEAVES_PER_LEVEL) * Math.PI * 2;
+                        
+                        const x = tree.position.x + Math.cos(angle) * levelRadius;
+                        const baseY = tree.position.y + levelHeight;
+                        const z = tree.position.z + Math.sin(angle) * levelRadius;
+                        
+                        const leafTime = currentTime - leaf.startTime;
+                        leaf.animationProgress = Math.min(1, leafTime * 2);
+                        
+                        if (leaf.animationProgress > 0) {
+                            const finalY = baseY * leaf.animationProgress;
+                            
+                            M.S();
+                            M.move(x, finalY, z);
+                            M.scale(0.03, 0.03, 0.03);
+                            M.draw(mySphere, [1.,1.,1.]);
+                            M.R();
+                        }
+                    }
+                }
+            });
+        });
+    });
+}
+
+
+let cameraPath = {
+    points: [
+        { x: 1, y:0.4, z: 1.2 },
+        { x: 0, y:0.4, z: 0 },
+        { x: -0.2, y: 0, z: -1 },
+        { x: -0.8, y: -0.5, z: -2 },
+        { x: -1.8, y: -0.2, z: -2.2 },
+        { x: -2.3, y:  -0.2, z: -1 },
+        { x: -2.2, y: -0.5, z: -1.2 },
+        { x: -2.3, y: -0.5, z: 0.5 },
+        { x: -3.4, y: -0.5, z: 0.9 },
+        { x: -3.9, y: -0.2, z: 1. },
+        { x: -4.2, y: -0.1, z: 1. },
+        { x: -4.9, y: -0.1, z:0.9},
+        { x: -6.1, y: -0.1, z:0.9 },
+
+        { x: 1, y: 0.4, z: 1.2 }
+    ],
+
+    speed: 0.01 
+};
+let lastAngleX = 0;
+let lastAngleY = 0;
+const ANGLE_SMOOTHING = 0.995; 
+const POSITION_SMOOTHING = 0.98; 
+
+
+function calculateLookAtAngles(eyePos, targetPos) {
+    let dx = targetPos[0] - eyePos[0];
+    let dy = targetPos[1] - eyePos[1];
+    let dz = targetPos[2] - eyePos[2];
+    
+    
+    let newAngleY = Math.atan2(dx, dz);
+    let newAngleX = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 0.08;
+    
+    // smoothing
+    lastAngleX = lastAngleX * ANGLE_SMOOTHING + newAngleX * (1 - ANGLE_SMOOTHING);
+    lastAngleY = lastAngleY * ANGLE_SMOOTHING + newAngleY * (1 - ANGLE_SMOOTHING);
+    
+    return {
+        angleX: lastAngleX,
+        angleY: lastAngleY
+    };
+}
+
+function drawCameraPath() {
+    if (cameraPath.points.length >= 2) {
+        const steps = 100; 
+        M.S();
+        
+        for (let i = 0; i < steps - 1; i++) {
+            const t1 = i / (steps - 1);
+            const t2 = (i + 1) / (steps - 1);
+
+            const x1 = catmullRom(cameraPath.points.map(p => p.x), t1);
+            const y1 = catmullRom(cameraPath.points.map(p => p.y), t1);
+            const z1 = catmullRom(cameraPath.points.map(p => p.z), t1);
+
+            const x2 = catmullRom(cameraPath.points.map(p => p.x), t2);
+            const y2 = catmullRom(cameraPath.points.map(p => p.y), t2);
+            const z2 = catmullRom(cameraPath.points.map(p => p.z), t2);
+
+            M.S()
+                .move(x1, y1, z1)
+                .aim([x2 - x1, y2 - y1, z2 - z1])
+                .scale(0.05, 0.05, distance([x1, y1, z1], [x2, y2, z2]))
+                .draw(myTube, [1, 0, 0]); 
+            M.R();
+        }
+        M.R();
+    }
+}
+
+
+//step
+function step(t) {
+    return t % 2 < 1 ? 2 * ease(t % 1) - 1 : 1 - 2 * (t % 1);
+}
+let state = {
+    points: [
+        { x: 1, y: -0.8, z: 0 },
+        { x: 0, y: -0.8, z: 0 },
+        { x: -0.5, y: -0.8, z: -1 },
+        { x: -0.8, y: -0.8, z: -2 },
+        { x: -2, y: -0.8, z: -2 },
+        { x: -2, y: -0.8, z: -1 },
+        { x: -2, y: -0.8, z: 0 },
+        { x: -3, y: -0.8, z: 0.2 },
+        { x: -4.2, y: -0.8, z:  0.2 },
+        { x: -5, y: -0.8, z: 0.2 },
+        { x: -5.2, y: -0.8, z:  0.2 },
+        { x: -5.9, y: -0.8, z:  0.2 },
+        { x: -6.9, y: -0.8, z:  0.2 },
+
+    ]
+};
+
+function handleContextMenu(e) {
+    e.preventDefault();
+    const coords = getWebGLCoordinates(e, canvas1);
+    state.points.push({ x: coords.x, y: coords.y, z: -3.5 });
+}
+initializeTrees();
+
+function drawSplinePath() {
+    if (state.points.length >= 4) {
+        const steps = 100;
+        for (let i = 0; i < steps - 1; i++) {
+            const t1 = i / (steps - 1);
+            const t2 = (i + 1) / (steps - 1);
+
+            const x1 = catmullRom(state.points.map(p => p.x), t1);
+            const y1 = catmullRom(state.points.map(p => p.y), t1);
+            const z1 = catmullRom(state.points.map(p => p.z), t1);
+
+            const x2 = catmullRom(state.points.map(p => p.x), t2);
+            const y2 = catmullRom(state.points.map(p => p.y), t2);
+            const z2 = catmullRom(state.points.map(p => p.z), t2);
+
+            M.S()
+                .move(x1, y1, z1)
+                .aim([x2 - x1, y2 - y1, z2 - z1])
+                .scale(0.3, 0.01, distance([x1, y1, z1], [x2, y2, z2]))
+                .draw(myCube, [0.5, 0.5, 0.5]);
+            M.R();
+        }
+    }
+}
+
+function differentMovment(pacechar,stridechar,legliftchar,hipswaychar,twistchar,gochar){
+  let height = heightSlider.value / 650;
+  let hipwidth = hipwidthSlider.value / 1500;
+  let radius = radiusSlider.value / 100;
+  let facing = facingSlider.value / 100;
+  let heading = headingSlider.value / 100;
+
+  // 2. dimensions
+  let r = 0.02 + 0.1 * Math.pow(radius, 1.5);
+  let hw = 0.07 + 0.16 * hipwidth;
+  let torsoWidth = hw; 
+
+  let yh = 0.5 + height;
+  let ll = yh / 2 - r * 0.49;
+  let shoulderWidth = hw * 1.6;
+
+  // 3. time and state 
+  let time = Date.now() / 1000;
+
+
+  // 4. setup view 
+  VM.identity()
+      .perspective(3)
+      .turnX(canvas1.ry / 30)
+      .turnY(canvas1.rx / 30);
+
+  // 5. movement angles
+  let face = TAU * facing - TAU / 2;
+  let fc = C(face);
+  let fs = -S(face);
+
+  let dir = TAU * heading - TAU / 2;
+  let dc = 3 * C(dir) * stridechar;
+  let ds = 3 * S(dir) * stridechar;
+
+  // 6. time-based updates
+  if (previousTime) {
+      let dt = 2 * (time - previousTime) * pacechar;
+      t += dt;
+      tx += dt * ds;
+      tz += dt * dc;
+  }
+  previousTime = time;
+
+  // 7. lifts && steps
+  let lLift = 0.2 * Math.max(0, S(TAU * t)) * legliftchar;
+  let rLift = 0.2 * Math.max(0, -S(TAU * t)) * legliftchar;
+  let lStep = 0.1 * step(2 * t);
+  let rStep = 0.1 * step(2 * t + 1);
+  let lArmSwing = 0.1 * step(2 * t + 1);
+  let rArmSwing = 0.1 * step(2 * t);
+
+
+  // 8. sway
+  let swaying = Math.max(-0.04, Math.min(0.04, 0.4 * (rLift - lLift) * hipwidth));
+  let stepping = lStep + rStep;
+
+  sSway.setForce(swaying * Math.abs(C(dir - face)) - stepping * ds);
+  sSway.update(0.1);
+  let sway = sSway.getPosition();
+
+  // 9. foot && hip positions
+  let LF = [hw * fc + ds * lStep, r + lLift, hw * fs + lLift + dc * lStep];
+  let RF = [-hw * fc + ds * rStep, r + rLift, -hw * fs + rLift + dc * rStep];
+  let LH = [sway * dc + hw * fc, yh, sway * ds + hw * fs];
+  let RH = [sway * dc - hw * fc, yh, sway * ds - hw * fs];
+
+
+  // 10. roll
+  sRoll.setForce(Math.max(LH[0] - LF[0], RF[0] - RH[0]));
+  sRoll.update(0.1);
+  let roll = -0.1 * sRoll.getPosition();
+
+  // 11. center && down force
+  let H = mix(LH, RH, 0.5);
+  H[1] -= downForce;
+  let df = (a, b) => 0.1 * Math.max(0, distance(a, b) - 2 * ll);
+  downForce = 0.9 * (downForce + df(LH, LF) + df(RH, RF));
+
+  // 12. torso
+  sTorso.setForce(sway * 0.5);
+  sTorso.update(0.1);
+  let torsoTwist = sTorso.getPosition();
+
+  // 13. hip movements
+  //0.5 for a perfect curve
+  let DH = scale(subtract(RH, LH), 0.3);
+  let rollHips = roll - sway * (hipswaychar + 0.5);
+  let rs = S(rollHips), rc = C(rollHips);
+
+  let dhx = DH[0] * rc;
+  let dhy = DH[1] + rs;
+  let dhz = DH[2] * rc;
+
+  let twistAngle = 2 * twistchar - 1;
+  let tc = C(twistAngle), ts = S(twistAngle);
+  DH = [tc * dhx + ts * dhz, dhy, -ts * dhx + tc * dhz];
+
+  LH = subtract(H, DH);
+  RH = add(H, DH);
+
+  // 14. Calculate upper body positions
+  let shoulderHeight = yh - 0.35;
+  let shoulderCenter = add(LH, scale(subtract(RH, LH), 0.5));
+  let torsoLength = shoulderHeight - ll;
+  let torsoCenter = mix(LH, RH, 0.5);
+  let torsoHeight = torsoCenter[1] + torsoLength;
+  let forwardVector = [S(face), 0, C(face)];
+  let armLength = ll * 0.6;
+
+  let shoulderLift = 0.1 * Math.max(0, S(TAU * t)) * legliftchar;
+  let shoulderSway = Math.max(-0.04, Math.min(0.07, 0.4 * (rLift - lLift) * hipwidth));
+
+  let LS = [
+    torsoCenter[0] - shoulderWidth * fc + shoulderSway * currentPostureSettings.armSpread -0.02,
+    torsoHeight+ torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight,
+    torsoCenter[2] - shoulderWidth * fs 
+];
+
+let RS = [
+    torsoCenter[0] + shoulderWidth * fc - shoulderSway * currentPostureSettings.armSpread +0.02,
+    torsoHeight - torsoTwist * 0.1 + shoulderLift * 0.01 + currentPostureSettings.shoulderHeight,
+    torsoCenter[2] + shoulderWidth * fs 
+];
+
+// 15. hands connection
+let LHand = [
+    LS[0] + (lArmSwing * forwardVector[0] * stridechar) * currentPostureSettings.armSpread * 2,
+    LS[1] - armLength * 0.8 + shoulderLift + currentPostureSettings.armHeight,  // Adjusted multiplier
+    LS[2] + (lArmSwing * forwardVector[2] * stridechar) + currentPostureSettings.armForward
+];
+
+let RHand = [
+    RS[0] + (rArmSwing * forwardVector[0] * stridechar) * currentPostureSettings.armSpread * 2,
+    RS[1] - armLength * 0.8 + shoulderLift + currentPostureSettings.armHeight,  // Adjusted multiplier
+    RS[2] + (rArmSwing * forwardVector[2] * stridechar) + currentPostureSettings.armForward
+];
+
+  // 16. shoulder twist
+  let shoulderTwist = twistchar * 2;
+  LS[1] += shoulderTwist * sway * 0.2;
+  RS[1] -= shoulderTwist * sway * 0.2;
+
+  // 17. joints
+  let getElbow = (S, H) => add(S, ik(armLength * 0.5, armLength * 0.5, subtract(H, S), [0, -0.5, -0.5]));
+
+  let LE = getElbow(LS, LHand);
+  let RE = getElbow(RS, RHand);
+
+  let tc2 = C(twistAngle / 2), ts2 = S(twistAngle / 2);
+  let DH2 = [tc2 * dhx + ts2 * dhz, dhy, -ts2 * dhx + tc2 * dhz];
+  let getKnee = (H, F) => add(H, ik(ll, ll, subtract(F, H), cross([0, 1, 0], DH2)));
+  let LK = getKnee(LH, LF);
+  let RK = getKnee(RH, RF);
+  
+  return params = {
+        hw,
+        torsoCenter,
+        fc,
+        fs,
+        torsoHeight,
+        torsoTwist,
+        shoulderLift,
+        shoulderSway,
+        shoulderWidth,
+        r,
+        LE,
+        RE,
+        LHand,
+        RHand,
+        LF,
+        RF,
+        LH,
+        RH,
+        LK,
+        RK,
+        currentPostureSettings
+    };    
+}
+
+function drawFrame() {
+    requestAnimationFrame(drawFrame);
+
+    const currentTime = Date.now();
+    const deltaTime = (currentTime - lastFrameTime) / 1000;
+    lastFrameTime = currentTime;
+    
+    const mood1 = char1State.moodValues;
+    const mood2 = char2State.moodValues;
+    
+
+    targetSpeed = mood1.pace < 26 ? 0.007 : 0.03;
+    currentSpeed = lerp(currentSpeed, targetSpeed, SPEED_LERP);
+    continuousTime += deltaTime * currentSpeed;
+
+    //parameters for both characters
+    let go1 = goSlider2.value / 100;
+    let stride = (mood1.stride / 100) * go1;
+    let leglift = (mood1.leglift / 100) * go1;
+    let hipsway = (mood1.hipsway / 100) * go1;
+    let twist = (mood1.twist / 100) * go1;
+    let pace = (mood1.pace / 100) * go1;
+
+    let go = goSlider.value / 100;
+    let stride2 = (mood2.stride / 100) * go;
+    let leglift2 = (mood2.leglift / 100) * go;
+    let hipsway2 = (mood2.hipsway / 100) * go;
+    let twist2 = (mood2.twist / 100) * go;
+    let pace2 = (mood2.pace / 250) * go;
+
+    let parmchar1 = differentMovment(pace, stride, leglift, hipsway, twist, go1);
+    let parmchar2 = differentMovment(pace2, stride2, leglift2, hipsway2, twist2, go);
+
+    drawScene(() => {
+        if (state.points.length >= 4) {
+            let t = continuousTime % 1;
+
+            //character position - focus point
+            const charX = catmullRom(state.points.map(p => p.x), t);
+            const charY = catmullRom(state.points.map(p => p.y), t);
+            const charZ = catmullRom(state.points.map(p => p.z), t);
+
+            // Camera follows from further back
+            let cameraT = (t + 0.03) % 1; // lag for stability
+            const camX = catmullRom(cameraPath.points.map(p => p.x), cameraT);
+            const camY = catmullRom(cameraPath.points.map(p => p.y), cameraT);
+            const camZ = catmullRom(cameraPath.points.map(p => p.z), cameraT);
+
+            // stable look-at 
+            const angles = calculateLookAtAngles(
+                [camX, camY, camZ],
+                [charX, charY, charZ] 
+            );
+
+            // camera transformation
+            M.identity()
+                .perspective(5)
+                .turnX(-angles.angleX*(Math.PI*0.08))
+                .turnY(-angles.angleY*(Math.PI*0.23))
+                .move(-camX, -camY, -camZ*0.8);
+
+            // Draw paths, characters, and camera
+            drawSplinePath();
+            // drawCameraPath();
+
+            // Draw characters
+            M.S();
+            M.move(charX, charY + 1/3.5, charZ);
+            
+            const tNext = (t + 0.001) % 1;
+            const nextX = catmullRom(state.points.map(p => p.x), tNext);
+            const nextZ = catmullRom(state.points.map(p => p.z), tNext);
+            const angleY = Math.atan2(nextX - charX, nextZ - charZ);
+            
+            M.turnY(angleY);
+            M.scale(0.5, 0.5, 0.5);
+            char(parmchar1);
+            M.move(0.3, 0, 0.2);
+            char2(parmchar2);
+            M.R();
+
+            drawTrees({
+                x: charX,
+                y: charY,
+                z: charZ
+            });
+        }
+    });
+
+//Additional 2 char that I ended up not showing
+//    M.S();
+//   M.move(0,-0.2,0.0);
+//   char(parmchar1);
+//   M.move(0.3,0.0,0.3);
+//   char2(parmchar2);
+//   M.R();
+}
+requestAnimationFrame(drawFrame);
+
+        </script>
+    </center>
+  </font>
+</body>
